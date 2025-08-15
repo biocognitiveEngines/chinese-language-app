@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Language Learning App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🇨🇳 Chinese Conversation Practice</h1>
+            <p>Practice speaking Chinese with AI-powered conversations and corrections</p>
+        </header>
+
+        <main>
+            <div class="conversation-panel">
+                <div id="conversation-history" class="conversation-history">
+                    <div class="message-group ai-message-group">
+                        <div class="message ai-message">
+                            <div class="message-content">
+                                <p>你好！我是你的中文老师。让我们开始对话吧！</p>
+                                <span class="timestamp"></span>
+                                <button class="replay-button" data-text="你好！我是你的中文老师。让我们开始对话吧！" title="Replay audio">🔊</button>
+                            </div>
+                        </div>
+                        <div class="message ai-message translation-message">
+                            <div class="message-content translation-content">
+                                <p>Hello! I'm your Chinese teacher. Let's start our conversation!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-section">
+                    <div class="speech-controls">
+                        <button id="mic-button" class="mic-button">
+                            <span class="mic-icon">🎤</span>
+                            <span class="mic-text">Hold to Record</span>
+                        </button>
+                        <div id="speech-status" class="speech-status">Ready to listen</div>
+                    </div>
+
+                    <div class="text-input-section">
+                        <input type="text" id="text-input" placeholder="Or type your Chinese here..." />
+                        <button id="send-button" class="send-button">Send</button>
+                    </div>
+
+                    <div class="controls">
+                        <button id="clear-button" class="control-button">Clear Chat</button>
+                        <button id="speak-last" class="control-button">Repeat Last</button>
+                        <button id="random-topic" class="control-button topic-button">💡 Random Topic</button>
+                        <label class="control-label">
+                            <input type="checkbox" id="auto-speak" checked>
+                            Auto-speak AI responses
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="correction-panel" id="correction-panel" style="display: none;">
+                <h3>Correction & Feedback</h3>
+                <div id="correction-content"></div>
+            </div>
+        </main>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
