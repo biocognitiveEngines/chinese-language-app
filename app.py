@@ -5,9 +5,9 @@ import os
 import json
 import re
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
+# Environment variables are handled by Vercel
+# from dotenv import load_dotenv
+# load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -285,6 +285,9 @@ Always be supportive and educational while maintaining natural conversation flow
         try:
             import random
             import time
+            import hashlib
+            
+            print("DEBUG: Starting random topic generation")
             
             # Add randomness to the prompt itself
             topic_categories = [
@@ -311,33 +314,47 @@ Always be supportive and educational while maintaining natural conversation flow
             selected_category = random.choice(topic_categories)
             selected_style = random.choice(question_styles)
             
-            # Use current timestamp for additional randomness
-            timestamp_seed = str(int(time.time() * 1000))[-4:]
+            # Use current timestamp and random data for additional randomness
+            timestamp_seed = str(int(time.time() * 1000000))  # More precision
+            random_hash = hashlib.md5(f"{timestamp_seed}{random.random()}".encode()).hexdigest()[:8]
             
-            topic_prompt = f"""You are generating conversation starter #{timestamp_seed}. 
+            print(f"DEBUG: Selected category: {selected_category}")
+            print(f"DEBUG: Selected style: {selected_style}")
+            print(f"DEBUG: Random seed: {random_hash}")
+            
+            topic_prompt = f"""Session ID: {random_hash} - Generate a UNIQUE conversation starter.
+            
             {selected_style} {selected_category}.
             
-            Create a unique, engaging conversation starter for a Chinese language learning student.
+            Create a completely unique, engaging conversation starter for a Chinese language learning student.
             Requirements:
             - Simple enough for beginners to intermediate learners
             - Culturally relevant and engaging  
             - Written in simplified Chinese characters
             - One question or statement to start a conversation
-            - Make it different from typical examples
-            - Be creative and varied
+            - Must be DIFFERENT from weather topics
+            - Be creative and varied - avoid repetitive patterns
+            - Think of something fresh and interesting
+            
+            IMPORTANT: Do NOT ask about weather. Choose a different, more interesting topic.
             
             Respond with ONLY the Chinese text, nothing else."""
             
             response = self.client.chat.completions.create(
                 model=self.deployment_name,
                 messages=[{"role": "user", "content": topic_prompt}],
-                temperature=1.0,  # Increased temperature for more randomness
+                temperature=1.2,  # Even higher temperature for more randomness
                 max_tokens=100,
-                seed=None  # Ensure no seed is set for maximum randomness
+                top_p=0.9,  # Add nucleus sampling
+                frequency_penalty=0.5,  # Reduce repetition
+                presence_penalty=0.3   # Encourage new topics
             )
             
             chinese_topic = response.choices[0].message.content.strip()
+            print(f"DEBUG: Generated topic: {chinese_topic}")
+            
             english_translation = self._get_translation(chinese_topic)
+            print(f"DEBUG: Translation: {english_translation}")
             
             return {
                 "topic": chinese_topic,
@@ -346,14 +363,19 @@ Always be supportive and educational while maintaining natural conversation flow
             
         except Exception as e:
             print(f"Error getting random topic: {e}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
             # Even fallback should have some variety
             import random
             fallback_topics = [
                 {"topic": "你今天做了什么有趣的事情？", "translation": "What interesting things did you do today?"},
                 {"topic": "你最喜欢吃什么菜？", "translation": "What's your favorite dish?"},
                 {"topic": "周末你通常做什么？", "translation": "What do you usually do on weekends?"},
-                {"topic": "你觉得今天的天气怎么样？", "translation": "How do you think today's weather is?"},
-                {"topic": "你有什么爱好吗？", "translation": "Do you have any hobbies?"}
+                {"topic": "你有什么爱好吗？", "translation": "Do you have any hobbies?"},
+                {"topic": "你去过哪些有趣的地方？", "translation": "What interesting places have you been to?"},
+                {"topic": "你最近在看什么书或电影？", "translation": "What books or movies have you been reading/watching recently?"},
+                {"topic": "你喜欢什么样的音乐？", "translation": "What kind of music do you like?"},
+                {"topic": "你的家乡有什么特色？", "translation": "What's special about your hometown?"}
             ]
             return random.choice(fallback_topics)
 
@@ -370,19 +392,32 @@ def serve_static(filename):
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
+        print("DEBUG: Chat endpoint called")
         data = request.get_json()
+        print(f"DEBUG: Received data: {data}")
+        
         user_message = data.get('message', '').strip()
         conversation_history = data.get('conversation_history', [])
+        
+        print(f"DEBUG: User message: {user_message}")
+        print(f"DEBUG: Conversation history length: {len(conversation_history)}")
         
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
         
+        # Check environment variables
+        print(f"DEBUG: API Key present: {bool(os.getenv('AZURE_OPENAI_API_KEY'))}")
+        print(f"DEBUG: Endpoint present: {bool(os.getenv('AZURE_OPENAI_ENDPOINT'))}")
+        
         result = tutor.get_conversation_response(user_message, conversation_history)
+        print(f"DEBUG: Got result: {result}")
         
         return jsonify(result)
         
     except Exception as e:
         print(f"Chat endpoint error: {e}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({
             "error": "An error occurred processing your message",
             "response": "抱歉，出现了错误。",
@@ -404,7 +439,17 @@ def random_topic():
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
+    env_status = {
+        "AZURE_OPENAI_API_KEY": bool(os.getenv("AZURE_OPENAI_API_KEY")),
+        "AZURE_OPENAI_ENDPOINT": bool(os.getenv("AZURE_OPENAI_ENDPOINT")),
+        "AZURE_OPENAI_DEPLOYMENT_NAME": bool(os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")),
+        "AZURE_OPENAI_API_VERSION": bool(os.getenv("AZURE_OPENAI_API_VERSION"))
+    }
+    return jsonify({
+        "status": "healthy", 
+        "timestamp": datetime.now().isoformat(),
+        "environment_variables": env_status
+    })
 
 if __name__ == '__main__':
     required_env_vars = [
