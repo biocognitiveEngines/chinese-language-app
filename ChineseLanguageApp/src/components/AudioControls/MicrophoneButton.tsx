@@ -10,7 +10,7 @@ import { useVoiceRecording } from '../../hooks/useVoiceRecording';
 import { useConversation } from '../../hooks/useConversation';
 
 const MicrophoneButton: React.FC = () => {
-  const { isRecording, recordedMessage, startRecording, stopRecording } =
+  const { isRecording, recordedMessage, error, isAvailable, startRecording, stopRecording } =
     useVoiceRecording();
   const { sendMessage } = useConversation();
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -40,6 +40,7 @@ const MicrophoneButton: React.FC = () => {
 
   // Handle when user presses down (start recording)
   const handlePressIn = async () => {
+    if (!isAvailable) return;
     Animated.spring(scaleAnim, {
       toValue: 0.95,
       useNativeDriver: true
@@ -49,6 +50,7 @@ const MicrophoneButton: React.FC = () => {
 
   // Handle when user releases (stop recording and send)
   const handlePressOut = async () => {
+    if (!isAvailable) return;
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true
@@ -60,6 +62,19 @@ const MicrophoneButton: React.FC = () => {
       await sendMessage(recordedMessage);
     }
   };
+
+  // Don't render if voice isn't available (Expo Go)
+  if (!isAvailable) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.button, styles.buttonDisabled]}>
+          <Text style={styles.icon}>🎤</Text>
+          <Text style={styles.textDisabled}>Voice unavailable in Expo Go</Text>
+          <Text style={styles.textHint}>Use text input below</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -83,6 +98,11 @@ const MicrophoneButton: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Show error message */}
+      {error && (
+        <Text style={styles.error}>{error}</Text>
+      )}
 
       {/* Show recorded transcript */}
       {recordedMessage && !isRecording && (
@@ -117,6 +137,11 @@ const styles = StyleSheet.create({
   buttonActive: {
     backgroundColor: '#FF3B30'
   },
+  buttonDisabled: {
+    backgroundColor: '#CCCCCC',
+    elevation: 0,
+    shadowOpacity: 0
+  },
   icon: {
     fontSize: 32,
     marginBottom: 8
@@ -125,6 +150,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600'
+  },
+  textDisabled: {
+    color: '#666666',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  textHint: {
+    color: '#888888',
+    fontSize: 12,
+    marginTop: 4
+  },
+  error: {
+    marginTop: 8,
+    color: '#FF3B30',
+    fontSize: 14,
+    textAlign: 'center'
   },
   transcript: {
     marginTop: 12,

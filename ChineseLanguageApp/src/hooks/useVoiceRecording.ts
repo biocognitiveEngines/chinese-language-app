@@ -11,6 +11,9 @@ export const useVoiceRecording = () => {
   const [error, setError] = useState<string | null>(null);
   const speechService = useRef(new SpeechRecognitionService()).current;
 
+  // Check if voice recording is available (not available in Expo Go)
+  const isAvailable = speechService.isAvailable();
+
   useEffect(() => {
     // Cleanup: destroy speech service when component unmounts
     return () => {
@@ -59,6 +62,7 @@ export const useVoiceRecording = () => {
     isRecording: state.isRecording,
     recordedMessage: state.recordedMessage,
     error,
+    isAvailable,
     startRecording,
     stopRecording,
     cancelRecording

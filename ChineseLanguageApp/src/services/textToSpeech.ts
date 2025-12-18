@@ -1,15 +1,11 @@
-import Tts from 'react-native-tts';
+import * as Speech from 'expo-speech';
 
 /**
  * Text-to-Speech Service
- * Wraps react-native-tts for Chinese audio playback
+ * Wraps expo-speech for Chinese audio playback
  */
 export class TextToSpeechService {
-  constructor() {
-    // Initialize TTS with Chinese language and moderate speech rate
-    Tts.setDefaultLanguage('zh-CN');
-    Tts.setDefaultRate(0.5); // 0.5 = normal speed
-  }
+  private rate: number = 0.8;
 
   /**
    * Speak Chinese text using native TTS
@@ -30,10 +26,13 @@ export class TextToSpeechService {
       }
 
       // Stop any ongoing speech before starting new one
-      await Tts.stop();
+      await Speech.stop();
 
       // Speak the Chinese text
-      await Tts.speak(chineseOnly);
+      Speech.speak(chineseOnly, {
+        language: 'zh-CN',
+        rate: this.rate,
+      });
     } catch (error) {
       console.error('Error speaking text:', error);
     }
@@ -44,7 +43,7 @@ export class TextToSpeechService {
    */
   async stop(): Promise<void> {
     try {
-      await Tts.stop();
+      await Speech.stop();
     } catch (error) {
       console.error('Error stopping TTS:', error);
     }
@@ -55,20 +54,16 @@ export class TextToSpeechService {
    * @param rate - Speech rate (0.0 = slowest, 1.0 = fastest)
    */
   async setRate(rate: number): Promise<void> {
-    try {
-      await Tts.setDefaultRate(rate);
-    } catch (error) {
-      console.error('Error setting TTS rate:', error);
-    }
+    this.rate = rate;
   }
 
   /**
    * Get available voices
    * Useful for checking if Chinese TTS is installed on device
    */
-  async getAvailableVoices(): Promise<any[]> {
+  async getAvailableVoices(): Promise<Speech.Voice[]> {
     try {
-      const voices = await Tts.voices();
+      const voices = await Speech.getAvailableVoicesAsync();
       return voices;
     } catch (error) {
       console.error('Error getting voices:', error);
